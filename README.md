@@ -1,5 +1,9 @@
 # llm-wiki-mcp
 
+[![npm version](https://img.shields.io/npm/v/llm-wiki-mcp.svg)](https://www.npmjs.com/package/llm-wiki-mcp)
+[![CI](https://github.com/sumitroajiprabowo/llm-wiki-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sumitroajiprabowo/llm-wiki-mcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/sumitroajiprabowo/llm-wiki-mcp/blob/main/LICENSE)
+
 An MCP server that implements [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — enabling any MCP-compatible LLM client to build and maintain a persistent, compounding knowledge base as structured markdown files.
 
 Requires **Node.js >= 20**.
@@ -201,4 +205,4 @@ Based on [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/4
 
 ## License
 
-MIT
+[MIT](./LICENSE)
