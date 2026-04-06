@@ -116,6 +116,18 @@ Restart your client after adding the config. Once connected, you can use natural
 | `wiki_search` | Search across wiki pages (text or semantic) |
 | `wiki_lint` | Health-check: orphan pages, broken links, missing frontmatter |
 
+## Programmatic API
+
+You can also use llm-wiki-mcp as a library:
+
+```typescript
+import { createServer } from 'llm-wiki-mcp';
+
+const server = await createServer({ vaultPath: '/path/to/vault' });
+```
+
+`createServer` returns an `McpServer` instance that you can connect to any MCP transport.
+
 ## Transports
 
 The default transport is **stdio**, used by the MCP client configurations above. For web-based clients, use **HTTP** (Streamable HTTP):

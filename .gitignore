@@ -3,6 +3,12 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
 # Skills (local only)
 .claude/
 skills-lock.json
