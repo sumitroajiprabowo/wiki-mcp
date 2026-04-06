@@ -170,6 +170,21 @@ npm run build
 npm test
 ```
 
+## Releasing
+
+This project uses semantic versioning. To publish a new version:
+
+```bash
+npm version patch   # bug fixes (0.1.0 → 0.1.1)
+npm version minor   # new features (0.1.0 → 0.2.0)
+npm version major   # breaking changes (0.1.0 → 1.0.0)
+git push origin main --tags
+```
+
+Pushing a `v*` tag triggers CI to run tests, build, publish to npm, and create a GitHub Release automatically.
+
+**Setup:** Add your npm token as `NPM_TOKEN` in GitHub repo Settings → Secrets → Actions.
+
 ## Obsidian Integration
 
 llm-wiki-mcp generates Obsidian-compatible markdown. Set `linkStyle: "wikilink"` in your schema (default) for native `[[wikilinks]]`, or `"markdown"` for standard `[links](path.md)` if you prefer other editors.
