@@ -5,9 +5,15 @@ import type { SearchProvider } from './search-provider.js';
 
 const execFileAsync = promisify(execFile);
 
+/**
+ * Search provider backed by the `qmd` CLI tool.
+ * `qmd` provides fast full-text indexed search over Markdown files.
+ * Only usable when the `qmd` binary is installed on the host system.
+ */
 export class QmdProvider implements SearchProvider {
   name = 'qmd';
 
+  /** Checks whether the `qmd` binary exists on PATH. */
   async available(): Promise<boolean> {
     try {
       await execFileAsync('which', ['qmd']);
@@ -17,6 +23,7 @@ export class QmdProvider implements SearchProvider {
     }
   }
 
+  /** Rebuilds the qmd search index for the given wiki directory. */
   async index(wikiDir: string): Promise<void> {
     try {
       await execFileAsync('qmd', ['index', '--dir', wikiDir]);
@@ -25,6 +32,7 @@ export class QmdProvider implements SearchProvider {
     }
   }
 
+  /** Delegates search to the qmd CLI and normalizes its JSON output. */
   async search(query: string, options: SearchOptions): Promise<SearchResult[]> {
     const { maxResults, wikiDir } = options;
 
@@ -43,6 +51,8 @@ export class QmdProvider implements SearchProvider {
 
       if (!Array.isArray(parsed)) return [];
 
+      // Map qmd's output shape to our internal SearchResult type.
+      // Falls back to `content` when `snippet` is absent (older qmd versions).
       return parsed.map((item: Record<string, unknown>) => ({
         path: String(item.path ?? ''),
         title: String(item.title ?? ''),

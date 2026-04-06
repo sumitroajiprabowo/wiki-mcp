@@ -5,8 +5,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/server';
 import { createServer } from './server.js';
 import { handleInit } from './tools/init.js';
 
+/** Semantic version surfaced by --version and the help banner. */
 const VERSION = '0.1.0';
 
+/** Multi-line help text printed when the user passes --help. */
 const HELP = `llm-wiki-mcp v${VERSION}
 MCP server for building and maintaining LLM-powered knowledge wikis.
 
@@ -28,6 +30,10 @@ Examples:
 
 Documentation: https://github.com/sumitroajiprabowo/llm-wiki-mcp`;
 
+/**
+ * CLI entry point. Parses arguments and either runs a sub-command (init)
+ * or starts the MCP server over the chosen transport (stdio / http).
+ */
 async function main() {
   const { values, positionals } = parseArgs({
     options: {
@@ -38,6 +44,7 @@ async function main() {
       version: { type: 'boolean' },
     },
     allowPositionals: true,
+    // Allow unknown flags so forward-compat flags don't crash the CLI
     strict: false,
   });
 
@@ -51,6 +58,7 @@ async function main() {
     process.exit(0);
   }
 
+  // Handle the "init" sub-command: scaffold a new vault then exit
   if (positionals[0] === 'init') {
     const initPath = resolve(positionals[1] ?? '.');
     const result = await handleInit({ path: initPath });
@@ -61,6 +69,7 @@ async function main() {
     process.exit(0);
   }
 
+  // Default vault to the current working directory if not specified
   const vaultPath = resolve(String(values.vault ?? '.'));
   const transportType = String(values.transport ?? 'stdio');
 
@@ -70,22 +79,28 @@ async function main() {
     process.exit(1);
   }
 
+  // --- Start the MCP server on the chosen transport ---
+
   if (transportType === 'stdio') {
     const server = await createServer({ vaultPath });
     const transport = new StdioServerTransport();
     await server.connect(transport);
+    // Log to stderr so it doesn't interfere with the stdio JSON-RPC stream
     console.error(`llm-wiki-mcp running (stdio) — vault: ${vaultPath}`);
   } else if (transportType === 'sse' || transportType === 'http') {
     const port = parseInt(String(values.port ?? '3000'), 10);
 
+    // Lazy-import HTTP-only deps so the stdio path stays lightweight
     const { createServer: createHttpServer } = await import('node:http');
     const { NodeStreamableHTTPServerTransport } = await import('@modelcontextprotocol/node');
     const { isInitializeRequest } = await import('@modelcontextprotocol/server');
     const { randomUUID } = await import('node:crypto');
 
+    // Map of active session IDs to their transports for request routing
     const transports: Record<string, InstanceType<typeof NodeStreamableHTTPServerTransport>> = {};
 
     const httpServer = createHttpServer(async (req, res) => {
+      // All MCP traffic is routed through the /mcp endpoint
       if (req.url !== '/mcp') {
         res.writeHead(404);
         res.end('Not found');
@@ -101,11 +116,13 @@ async function main() {
 
         const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
+        // Route to an existing session if the header matches
         if (sessionId && transports[sessionId]) {
           await transports[sessionId].handleRequest(req, res, body);
           return;
         }
 
+        // First request from a new client — spin up a dedicated server instance
         if (!sessionId && isInitializeRequest(body)) {
           const transport = new NodeStreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
@@ -114,6 +131,7 @@ async function main() {
             },
           });
 
+          // Clean up the session map when the client disconnects
           transport.onclose = () => {
             if (transport.sessionId) {
               delete transports[transport.sessionId];
@@ -135,6 +153,7 @@ async function main() {
           }),
         );
       } else if (req.method === 'GET') {
+        // GET is used for SSE streaming on an existing session
         const sessionId = req.headers['mcp-session-id'] as string;
         if (sessionId && transports[sessionId]) {
           await transports[sessionId].handleRequest(req, res);
@@ -148,6 +167,7 @@ async function main() {
       }
     });
 
+    // Bind to localhost only — external access requires a reverse proxy
     httpServer.listen(port, '127.0.0.1', () => {
       console.error(
         `llm-wiki-mcp running (http) — vault: ${vaultPath} — http://127.0.0.1:${port}/mcp`,

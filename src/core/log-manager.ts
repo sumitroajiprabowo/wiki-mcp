@@ -3,9 +3,17 @@ import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs
 import { join } from 'node:path';
 import type { LogEntry, LogFilter } from '../config/types.js';
 
+/** Markdown header written at the top of a new log file. */
 const LOG_HEADER = '# Wiki Log\n';
+/** Parses a log entry heading: `## [YYYY-MM-DD] operation | title` */
 const ENTRY_REGEX = /^## \[(\d{4}-\d{2}-\d{2})\] (\w+) \| (.+)$/;
 
+/**
+ * Append-only log stored as a human-readable Markdown file (`log.md`).
+ *
+ * Each operation (create, update, delete) is recorded as a timestamped
+ * entry so users can audit changes without relying on git history.
+ */
 export class LogManager {
   private logPath: string;
 
@@ -13,6 +21,7 @@ export class LogManager {
     this.logPath = join(vaultPath, 'log.md');
   }
 
+  /** Appends a single log entry to the end of the log file, creating the file if needed. */
   async append(entry: LogEntry): Promise<void> {
     if (!existsSync(this.logPath)) {
       writeFileSync(this.logPath, LOG_HEADER + '\n', 'utf-8');
@@ -26,6 +35,7 @@ export class LogManager {
     appendFileSync(this.logPath, block, 'utf-8');
   }
 
+  /** Reads and optionally filters log entries. Filters are applied in order: operation, since, limit. */
   async read(filter?: LogFilter): Promise<LogEntry[]> {
     if (!existsSync(this.logPath)) {
       return [];
@@ -37,6 +47,7 @@ export class LogManager {
     let current: LogEntry | null = null;
     const detailLines: string[] = [];
 
+    // Flush accumulates detail lines into the current entry before moving on
     const flushCurrent = () => {
       if (current) {
         if (detailLines.length > 0) {
@@ -71,6 +82,7 @@ export class LogManager {
       result = result.filter((e) => e.date >= filter.since!);
     }
     if (filter?.limit) {
+      // Keep the most recent N entries (tail), not the oldest
       result = result.slice(-filter.limit);
     }
 

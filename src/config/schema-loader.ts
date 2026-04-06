@@ -1,12 +1,23 @@
-// src/config/schema-loader.ts
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import yaml from 'js-yaml';
 import { DEFAULT_SCHEMA, type WikiSchema } from './types.js';
 
+/**
+ * Loads the wiki schema from `.wiki-schema.yaml` at the vault root.
+ *
+ * Missing fields are back-filled from `DEFAULT_SCHEMA`, so users only
+ * need to declare the values they want to override. If the config file
+ * does not exist at all, a full copy of the defaults is returned.
+ *
+ * @param vaultPath - Absolute path to the vault root directory
+ * @returns A fully populated WikiSchema
+ * @throws If `linkStyle` is present but not a recognized value
+ */
 export function loadSchema(vaultPath: string): WikiSchema {
   const configPath = join(vaultPath, '.wiki-schema.yaml');
 
+  // No config file — use sensible defaults
   if (!existsSync(configPath)) {
     return { ...DEFAULT_SCHEMA };
   }
@@ -14,10 +25,12 @@ export function loadSchema(vaultPath: string): WikiSchema {
   const raw = readFileSync(configPath, 'utf-8');
   const parsed = yaml.load(raw) as Partial<WikiSchema>;
 
+  // Validate early so typos surface as clear error messages
   if (parsed.linkStyle && parsed.linkStyle !== 'wikilink' && parsed.linkStyle !== 'markdown') {
     throw new Error(`Invalid linkStyle: "${parsed.linkStyle}". Must be "wikilink" or "markdown".`);
   }
 
+  // Merge each section independently so partial overrides don't wipe defaults
   return {
     name: parsed.name ?? DEFAULT_SCHEMA.name,
     version: parsed.version ?? DEFAULT_SCHEMA.version,

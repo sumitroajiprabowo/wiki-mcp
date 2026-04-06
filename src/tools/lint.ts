@@ -4,15 +4,18 @@ import matter from 'gray-matter';
 import type { WikiSchema } from '../config/types.js';
 import type { LinkResolver } from '../core/link-resolver.js';
 
+/** Parameters for the lint operation. "recent" scope is reserved for future incremental checks. */
 interface LintInput {
   scope?: 'full' | 'recent';
 }
 
+/** A directed link that points to a non-existent page. */
 interface BrokenLink {
   from: string;
   to: string;
 }
 
+/** Comprehensive health-check results for the wiki vault. */
 interface LintOutput {
   orphan_pages: string[];
   broken_links: BrokenLink[];
@@ -21,6 +24,11 @@ interface LintOutput {
   stale_index_entries: string[];
 }
 
+/**
+ * Performs a full health-check of the wiki vault by scanning every page
+ * for structural issues: orphans, broken links, missing frontmatter,
+ * and stale index entries. Returns all findings in a single report.
+ */
 export async function handleLint(
   input: LintInput,
   vaultPath: string,
@@ -43,6 +51,7 @@ export async function handleLint(
     .filter((f) => f.endsWith('.md'))
     .map((f) => `${schema.paths.wiki}/${f}`);
 
+  // First pass: build lookup maps and record all inbound link targets
   const titleToPath = new Map<string, string>();
   const pathToTitle = new Map<string, string>();
   const inboundLinks = new Set<string>();
@@ -54,6 +63,7 @@ export async function handleLint(
     const raw = readFileSync(absPath, 'utf-8');
     const parsed = matter(raw);
 
+    // Fall back to the filename (without extension) when frontmatter has no title
     const title = (parsed.data.title as string) ?? file.replace(/.*\//, '').replace('.md', '');
     titleToPath.set(title, file);
     pathToTitle.set(file, title);
@@ -68,6 +78,7 @@ export async function handleLint(
     }
   }
 
+  // Second pass: identify orphans (pages no other page links to)
   const orphanPages: string[] = [];
   const missingPagesSet = new Set<string>();
 
@@ -78,6 +89,7 @@ export async function handleLint(
     }
   }
 
+  // Third pass: detect broken links (targets that don't resolve to any existing page)
   for (const file of files) {
     const absPath = join(vaultPath, file);
     const raw = readFileSync(absPath, 'utf-8');
@@ -91,6 +103,7 @@ export async function handleLint(
     }
   }
 
+  // Check the root index for links that point to deleted or renamed pages
   const staleIndexEntries: string[] = [];
   const indexPath = join(vaultPath, 'index.md');
   if (existsSync(indexPath)) {

@@ -3,22 +3,30 @@ import { join } from 'node:path';
 import yaml from 'js-yaml';
 import { DEFAULT_SCHEMA, type WikiSchema } from '../config/types.js';
 
+/** Parameters for initializing a new wiki vault. */
 interface InitInput {
   path: string;
   name?: string;
   linkStyle?: 'wikilink' | 'markdown';
 }
 
+/** Summary of what the init operation created (or skipped). */
 interface InitOutput {
   success: boolean;
   message: string;
   created: string[];
 }
 
+/**
+ * Scaffolds a new wiki vault: creates directories, writes the schema file,
+ * and seeds index.md and log.md. Safe to call on an existing vault -- it
+ * will bail out without overwriting if the schema file already exists.
+ */
 export async function handleInit(input: InitInput): Promise<InitOutput> {
   const { path: vaultPath, name, linkStyle } = input;
   const schemaPath = join(vaultPath, '.wiki-schema.yaml');
 
+  // Idempotency guard: never overwrite an existing vault
   if (existsSync(schemaPath)) {
     return {
       success: true,
@@ -45,6 +53,7 @@ export async function handleInit(input: InitInput): Promise<InitOutput> {
     }
   }
 
+  // lineWidth: -1 disables line wrapping so paths and values stay on one line
   const yamlContent = yaml.dump(schema, { lineWidth: -1 });
   writeFileSync(schemaPath, yamlContent, 'utf-8');
   created.push('.wiki-schema.yaml');

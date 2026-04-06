@@ -13,6 +13,7 @@ import { handleIngest } from './ingest.js';
 import { handleSearch } from './search.js';
 import { handleLint } from './lint.js';
 
+/** Core dependencies injected into every tool handler. */
 interface Services {
   wikiManager: WikiManager;
   linkResolver: LinkResolver;
@@ -21,8 +22,13 @@ interface Services {
   vaultPath: string;
 }
 
+/**
+ * Registers all wiki MCP tools on the given server.
+ * Each tool delegates to a standalone handler so business logic stays testable in isolation.
+ */
 export function registerTools(server: McpServer, services: Services): void {
   const { wikiManager, linkResolver, searchProvider, schema, vaultPath } = services;
+  // Pre-compute the absolute wiki directory used by search and lint tools
   const wikiDir = `${vaultPath}/${schema.paths.wiki}`;
 
   server.registerTool(

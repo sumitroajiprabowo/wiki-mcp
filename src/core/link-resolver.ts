@@ -1,15 +1,23 @@
 // src/core/link-resolver.ts
 import type { ParsedLink } from '../config/types.js';
 
+/** Matches `[[Target]]` or `[[Target|Display]]` wikilinks. */
 const WIKILINK_REGEX = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+/** Matches standard `[text](url)` Markdown links. */
 const MDLINK_REGEX = /\[([^\]]+)\]\(([^)]+)\)/g;
 
+/**
+ * Creates and parses inter-page links in either wikilink (`[[…]]`) or
+ * standard Markdown (`[…](…)`) style, depending on user configuration.
+ */
 export class LinkResolver {
   constructor(
     private linkStyle: 'wikilink' | 'markdown',
+    /** Relative directory used as the base path when generating Markdown-style links. */
     private wikiDir: string,
   ) {}
 
+  /** Converts a page title into a URL-safe slug for use in file names and paths. */
   slugify(title: string): string {
     return title
       .toLowerCase()
@@ -20,6 +28,7 @@ export class LinkResolver {
       .replace(/^-|-$/g, '');
   }
 
+  /** Generates a link string pointing to the given page title, using the configured link style. */
   createLink(targetTitle: string, displayText?: string): string {
     if (this.linkStyle === 'wikilink') {
       if (displayText) {
@@ -34,6 +43,7 @@ export class LinkResolver {
     return `[${text}](${path})`;
   }
 
+  /** Extracts all inter-page links from the given Markdown content. */
   parseLinks(content: string): ParsedLink[] {
     const links: ParsedLink[] = [];
 
@@ -49,6 +59,7 @@ export class LinkResolver {
       }
     } else {
       let match: RegExpExecArray | null;
+      // Fresh regex instance to avoid stale `lastIndex` from the module-level constant
       const regex = new RegExp(MDLINK_REGEX.source, 'g');
       while ((match = regex.exec(content)) !== null) {
         links.push({

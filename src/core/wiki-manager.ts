@@ -8,7 +8,14 @@ import type { IndexManager } from './index-manager.js';
 import type { LogManager } from './log-manager.js';
 import { safePath } from '../utils/safe-path.js';
 
+/**
+ * High-level facade for wiki CRUD operations.
+ *
+ * Coordinates file I/O with the index and log managers so that every
+ * create/update/delete keeps the index and audit log in sync.
+ */
 export class WikiManager {
+  /** Absolute path to the directory that holds all wiki page files. */
   private wikiAbsDir: string;
 
   constructor(
@@ -21,6 +28,10 @@ export class WikiManager {
     this.wikiAbsDir = join(vaultPath, schema.paths.wiki);
   }
 
+  /**
+   * Creates a new wiki page, adds it to the index, and logs the operation.
+   * Returns early without writing if a page with the same slug already exists.
+   */
   async createPage(
     title: string,
     content: string,
@@ -43,6 +54,7 @@ export class WikiManager {
     const parsed = matter(content);
     const summary = this.extractSummary(parsed.content);
 
+    // Prefer the explicit pageType argument, fall back to frontmatter `type`, then 'other'
     await this.indexManager.addEntry({
       title,
       path: relativePath,
@@ -61,6 +73,7 @@ export class WikiManager {
     return { success: true, path: relativePath, message: `Created: ${relativePath}` };
   }
 
+  /** Reads a wiki page by title or path. Throws if the page does not exist. */
   async readPage(lookup: { title?: string; path?: string }): Promise<PageData> {
     let absPath: string;
     let relativePath: string;
@@ -90,6 +103,7 @@ export class WikiManager {
     };
   }
 
+  /** Overwrites an existing page's content and logs the update. */
   async updatePage(
     path: string,
     content: string,
@@ -116,6 +130,10 @@ export class WikiManager {
     return { success: true, path, message: `Updated: ${path}` };
   }
 
+  /**
+   * Deletes a page, removes it from the index, and reports any files
+   * that now contain broken links pointing to the deleted page.
+   */
   async deletePage(
     path: string,
   ): Promise<{ success: boolean; message: string; brokenLinks: string[] }> {
@@ -145,6 +163,7 @@ export class WikiManager {
     return { success: true, message: `Deleted: ${path}`, brokenLinks };
   }
 
+  /** Scans all wiki files to find pages that link to the given title (backlinks). */
   private findBacklinks(title: string): string[] {
     const backlinks: string[] = [];
     const files = this.listWikiFiles();
@@ -161,6 +180,7 @@ export class WikiManager {
     return backlinks;
   }
 
+  /** Returns relative paths for all `.md` files in the wiki directory. */
   listWikiFiles(): string[] {
     if (!existsSync(this.wikiAbsDir)) return [];
 
@@ -169,6 +189,7 @@ export class WikiManager {
       .map((f) => `${this.schema.paths.wiki}/${f}`);
   }
 
+  /** Extracts the first non-heading, non-empty line as a summary (truncated to 120 chars). */
   private extractSummary(content: string): string {
     const lines = content.trim().split('\n');
     for (const line of lines) {
