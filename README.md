@@ -1,6 +1,8 @@
-# wiki-mcp
+# llm-wiki-mcp
 
 An MCP server that implements [Andrej Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) — enabling any MCP-compatible LLM client to build and maintain a persistent, compounding knowledge base as structured markdown files.
+
+Requires **Node.js >= 20**.
 
 ## The Idea
 
@@ -44,6 +46,12 @@ Works with [Obsidian](https://obsidian.md/) — the LLM edits files, you browse 
 
 ## Quick Start
 
+Install globally (optional):
+
+```bash
+npm install -g llm-wiki-mcp
+```
+
 Initialize a new vault:
 
 ```bash
@@ -53,12 +61,17 @@ npx llm-wiki-mcp init ./my-wiki
 Run the server (stdio transport, for Claude Desktop / MCP clients):
 
 ```bash
-npx llm-llm-wiki-mcp --vault ./my-wiki
+npx llm-wiki-mcp --vault ./my-wiki
 ```
 
-### Claude Desktop Configuration
+### MCP Client Configuration
 
-Add to your Claude Desktop `claude_desktop_config.json`:
+Add the following to your MCP config file:
+
+| Client | Config file |
+|--------|------------|
+| Claude Code | `~/.claude.json` or `.claude/settings.json` |
+| Claude Desktop | `claude_desktop_config.json` |
 
 ```json
 {
@@ -70,6 +83,13 @@ Add to your Claude Desktop `claude_desktop_config.json`:
   }
 }
 ```
+
+Restart your client after adding the config. Once connected, you can use natural language:
+
+- "Ingest this article into the wiki"
+- "Create a page about Prompt Engineering"
+- "Search the wiki for transformer architecture"
+- "Run a health check on the wiki"
 
 ## Tools
 
@@ -86,25 +106,19 @@ Add to your Claude Desktop `claude_desktop_config.json`:
 
 ## Transports
 
-**stdio** (default) -- for Claude Desktop and other MCP clients:
-
-```bash
-llm-wiki-mcp --vault ./my-wiki
-```
-
-**HTTP** (Streamable HTTP) -- for web-based clients:
+The default transport is **stdio**, used by the MCP client configurations above. For web-based clients, use **HTTP** (Streamable HTTP):
 
 ```bash
 llm-wiki-mcp --vault ./my-wiki --transport http --port 3000
 ```
 
-The HTTP transport serves an MCP-compliant Streamable HTTP endpoint at `http://127.0.0.1:3000/mcp`.
+This serves an MCP-compliant endpoint at `http://127.0.0.1:3000/mcp`.
 
 ## Search
 
-wiki-mcp supports two search backends:
+llm-wiki-mcp supports two search backends:
 
-- **qmd** (optional) -- if `qmd` is installed and available on PATH, wiki-mcp uses it for semantic/hybrid search.
+- **qmd** (optional) -- if `qmd` is installed and available on PATH, llm-wiki-mcp uses it for semantic/hybrid search.
 - **Simple** (default fallback) -- case-insensitive substring search across page content. No external dependencies.
 
 ## Configuration
@@ -134,7 +148,7 @@ pageTypes:
     requiredFields: [title, type, subjects, created]
 ```
 
-See `examples/` for research and personal vault configurations.
+Customize page types, required fields, link style, and log format to fit your domain.
 
 ## Vault Structure
 
@@ -158,7 +172,7 @@ npm test
 
 ## Obsidian Integration
 
-wiki-mcp generates Obsidian-compatible markdown. Set `linkStyle: "wikilink"` in your schema (default) for native `[[wikilinks]]`, or `"markdown"` for standard `[links](path.md)` if you prefer other editors.
+llm-wiki-mcp generates Obsidian-compatible markdown. Set `linkStyle: "wikilink"` in your schema (default) for native `[[wikilinks]]`, or `"markdown"` for standard `[links](path.md)` if you prefer other editors.
 
 **Tips from Karpathy's gist:**
 - Use [Obsidian Web Clipper](https://obsidian.md/clipper) to convert web articles to markdown sources
