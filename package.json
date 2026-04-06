@@ -26,11 +26,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sumitroajiprabowo/wiki-mcp.git"
+    "url": "git+https://github.com/sumitroajiprabowo/llm-wiki-mcp.git"
   },
-  "homepage": "https://github.com/sumitroajiprabowo/wiki-mcp#readme",
+  "homepage": "https://github.com/sumitroajiprabowo/llm-wiki-mcp#readme",
   "bugs": {
-    "url": "https://github.com/sumitroajiprabowo/wiki-mcp/issues"
+    "url": "https://github.com/sumitroajiprabowo/llm-wiki-mcp/issues"
   },
   "files": [
     "dist",
