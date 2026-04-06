@@ -6,12 +6,12 @@ export default defineConfig([
     format: ["esm"],
     dts: true,
     clean: true,
-    target: "node18",
+    target: "node20",
   },
   {
     entry: { cli: "src/cli.ts" },
     format: ["esm"],
-    target: "node18",
+    target: "node20",
     banner: {
       js: "#!/usr/bin/env node",
     },
